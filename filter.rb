@@ -1,27 +1,22 @@
-require 'rexml/document'
-include REXML
+require 'nokogiri'
 
-# Parse the results.xml file
-file = File.new('results_thin.xml')
-doc = Document.new(file)
+doc = Nokogiri::XML(File.open('results_thin.xml'))
 
-# Find all <TestResult> elements in the document
-test_results = XPath.match(doc, './/xccdf:rule-result', {"xccdf" => "http://checklists.nist.gov/xccdf/1.2"})
-score = XPath.match(doc, './/xccdf:score', {"xccdf" => "http://checklists.nist.gov/xccdf/1.2"})
+test_results = doc.xpath('//xccdf:rule-result', 'xccdf' => 'http://checklists.nist.gov/xccdf/1.2')
+score = doc.xpath('//xccdf:score', 'xccdf' => 'http://checklists.nist.gov/xccdf/1.2')
 
 puts score.first.text
 
 pass_list = []
 fail_list = []
 
-# Iterate over the test results and extract the result value
 test_results.each do |result|
-    idref     = result.attributes['idref'] || 'unknown'
-    weight    = result.attributes['weight'] || 'unknown'
-    severity  = result.attributes['severity'] || 'unknown'
-    result_elem = XPath.first(result, './/xccdf:result', {"xccdf" => "http://checklists.nist.gov/xccdf/1.2"})
-    
-    if !result_elem.nil?
+    idref     = result['idref'] || 'unknown'
+    weight    = result['weight'] || 'unknown'
+    severity  = result['severity'] || 'unknown'
+    result_elem = result.at_xpath('.//xccdf:result', 'xccdf' => 'http://checklists.nist.gov/xccdf/1.2')
+
+    unless result_elem.nil?
         result_value = result_elem.text
         puts "Rule ID: #{idref}\nResult: #{result_value}\n"
         
@@ -33,7 +28,6 @@ test_results.each do |result|
     end
 end
 
-# Print the pass and fail lists
 puts "Pass list:\n#{pass_list}\n"
 puts "--------------------------------"
-puts "Fail
+puts "Fail list:\n#{fail_list}\n"
